@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151714">
+  <title>My Chess Explorer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#">
+      <span class="brand-mark">♞</span>
+      <span>My Chess <strong>Explorer</strong></span>
+    </a>
+    <div class="archive-state">
+      <span id="dataDot" class="status-dot"></span>
+      <span id="dataStatus">Preparing local archive…</span>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="board-column">
+      <div class="player-strip">
+        <span class="avatar dark">♟</span>
+        <div><strong id="topPlayer">Black</strong><small id="topMeta">to move second</small></div>
+        <span id="turnBadgeTop" class="turn-badge">TURN</span>
+      </div>
+      <div class="board-stage">
+        <div id="evalBar" class="eval-bar" title="Stockfish evaluation">
+          <div id="evalWhite" class="eval-white"></div>
+          <span id="evalBarLabel" class="eval-bar-label">0.0</span>
+        </div>
+        <div id="boardWrap" class="board-wrap">
+          <div id="board" class="board" aria-label="Interactive chess board"></div>
+          <svg id="boardArrows" class="board-arrows" viewBox="0 0 800 800" aria-hidden="true"></svg>
+          <div id="promotionPicker" class="promotion-picker hidden"></div>
+        </div>
+      </div>
+      <div class="player-strip">
+        <span class="avatar light">♙</span>
+        <div><strong id="bottomPlayer">White</strong><small id="bottomMeta">to move first</small></div>
+        <span id="turnBadgeBottom" class="turn-badge">TURN</span>
+      </div>
+      <div class="board-actions">
+        <button id="resetBtn" class="btn secondary"><span>↺</span> Reset</button>
+        <button id="undoBtn" class="btn secondary"><span>↶</span> Undo</button>
+        <button id="flipBtn" class="btn secondary"><span>⇅</span> Flip board</button>
+        <button id="analyzeBtn" class="btn primary"><span>✦</span> Analyze position</button>
+      </div>
+      <div class="position-nav" aria-label="Position navigation">
+        <button id="firstMoveBtn" title="Starting position">⏮</button>
+        <button id="previousMoveBtn" title="Previous move">◀</button>
+        <span id="positionCounter">0 / 0</span>
+        <button id="nextMoveBtn" title="Next move">▶</button>
+        <button id="lastMoveBtn" title="Final position">⏭</button>
+      </div>
+    </section>
+
+    <aside class="analysis-panel">
+      <nav class="tabs" aria-label="Analysis views">
+        <button class="tab active" data-tab="explorer">Explorer</button>
+        <button class="tab" data-tab="moves">Moves <span id="moveCountBadge">0</span></button>
+        <button class="tab" data-tab="import">Import</button>
+      </nav>
+
+      <div id="explorerTab" class="tab-page active">
+        <section class="card position-card">
+          <div class="section-head">
+            <div><span class="eyebrow">CURRENT POSITION</span><h2 id="positionTitle">Starting position</h2></div>
+            <div class="position-tools">
+              <button id="savePositionBtn" class="icon-btn" title="Save position">☆</button>
+              <button id="copyFenBtn" class="icon-btn" title="Copy FEN">⧉</button>
+            </div>
+          </div>
+          <code id="fenText" class="fen"></code>
+          <div id="savePositionForm" class="save-position-form hidden">
+            <input id="positionNote" maxlength="160" placeholder="Add a note about this position…">
+            <button id="confirmSavePositionBtn" class="btn primary">Save</button>
+          </div>
+        </section>
+
+        <section class="card engine-card">
+          <div class="section-head">
+            <div><span class="eyebrow green">STOCKFISH ANALYSIS</span><h2>Best continuation</h2></div>
+            <div class="engine-controls">
+              <label class="depth-control">Depth
+                <select id="depthSelect" aria-label="Stockfish analysis depth">
+                  <option value="8">8</option>
+                  <option value="10">10</option>
+                  <option value="12">12</option>
+                  <option value="14">14</option>
+                  <option value="16" selected>16</option>
+                  <option value="18">18</option>
+                  <option value="20">20</option>
+                  <option value="22">22</option>
+                </select>
+              </label>
+              <div id="engineEval" class="evaluation">—</div>
+            </div>
+          </div>
+          <div class="engine-settings">
+            <label>Time<select id="engineTime"><option value="0">Use depth</option><option value="1000">1 second</option><option value="3000">3 seconds</option><option value="5000">5 seconds</option><option value="10000">10 seconds</option></select></label>
+            <label>Lines<select id="engineMultiPv"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></label>
+            <label>Strength<select id="engineStrength"><option value="20">Maximum</option><option value="15">Strong</option><option value="10">Medium</option><option value="5">Casual</option><option value="0">Beginner</option></select></label>
+            <label class="toggle-control"><input id="engineInfinite" type="checkbox"> Infinite</label>
+          </div>
+          <div id="engineState" class="empty compact">
+            <span class="engine-icon">♜</span>
+            <div><strong>Engine is ready to analyze</strong><p>Press Analyze position for the top three lines.</p></div>
+          </div>
+          <div id="engineLines" class="engine-lines hidden"></div>
+        </section>
+
+        <section class="card history-card">
+          <div class="section-head">
+            <div><span class="eyebrow gold">MY HISTORICAL MOVES</span><h2>What I played here</h2></div>
+            <span id="matchCount" class="pill">0 games</span>
+          </div>
+          <details class="history-filters">
+            <summary>Filter historical games</summary>
+            <div class="filter-grid">
+              <label>Time control<select id="filterTimeControl"><option value="">All</option><option value="bullet">Bullet</option><option value="blitz">Blitz</option><option value="rapid">Rapid</option><option value="daily">Daily</option></select></label>
+              <label>My color<select id="filterColor"><option value="">Both</option><option value="w">White</option><option value="b">Black</option></select></label>
+              <label>Result<select id="filterResult"><option value="">All</option><option value="win">Wins</option><option value="draw">Draws</option><option value="loss">Losses</option></select></label>
+              <label>From date<input id="filterDateFrom" type="date"></label>
+              <label>To date<input id="filterDateTo" type="date"></label>
+              <label>Min opponent rating<input id="filterRatingMin" type="number" min="0" step="100" placeholder="Any"></label>
+              <label>Max opponent rating<input id="filterRatingMax" type="number" min="0" step="100" placeholder="Any"></label>
+              <button id="clearFiltersBtn" class="btn secondary" type="button">Clear filters</button>
+            </div>
+          </details>
+          <div id="historicalEmpty" class="empty">
+            <span class="database-icon">▤</span>
+            <strong>No matching games yet</strong>
+            <p>Load your local archive or fetch games from Chess.com.</p>
+          </div>
+          <div id="historicalMoves" class="historical-list hidden"></div>
+        </section>
+
+        <section class="card saved-card">
+          <div class="section-head">
+            <div><span class="eyebrow">SAVED POSITIONS</span><h2>Your bookmarks</h2></div>
+            <span id="savedCount" class="pill">0</span>
+          </div>
+          <div id="savedPositions" class="saved-positions"></div>
+        </section>
+      </div>
+
+      <div id="movesTab" class="tab-page">
+        <section class="card tall">
+          <div class="section-head"><div><span class="eyebrow">GAME SCORE</span><h2>Move history</h2></div></div>
+          <div id="moveHistory" class="move-history"></div>
+          <div id="gameResult" class="game-result"></div>
+        </section>
+      </div>
+
+      <div id="importTab" class="tab-page">
+        <section class="card">
+          <span class="eyebrow green">CHESS.COM ARCHIVE</span>
+          <h2>Load a player's games</h2>
+          <p class="help">Downloads public monthly archives, then stores the PGNs in this browser.</p>
+          <div class="input-row">
+            <input id="usernameInput" autocomplete="off" value="deepsloth" placeholder="Chess.com username">
+            <button id="fetchGamesBtn" class="btn primary">Fetch games</button>
+          </div>
+          <div id="fetchProgress" class="progress hidden"><div id="progressBar"></div></div>
+          <p id="importMessage" class="message"></p>
+        </section>
+        <section class="card">
+          <span class="eyebrow gold">PGN IMPORT</span>
+          <h2>Paste a game or archive</h2>
+          <textarea id="pgnInput" spellcheck="false" placeholder='[Event "My game"]&#10;[White "Player"]&#10;[Black "Opponent"]&#10;&#10;1. e4 e5 2. Nf3 Nc6'></textarea>
+          <div class="import-actions">
+            <label class="btn secondary file-btn">Choose PGN<input id="pgnFile" type="file" accept=".pgn,text/plain" multiple></label>
+            <button id="loadPgnBtn" class="btn primary">Load on board</button>
+            <button id="addArchiveBtn" class="btn secondary">Add to archive</button>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <footer>Position matching uses piece placement, side to move, castling rights, and en passant square.</footer>
+  <div id="toast" class="toast"></div>
+
+  <script src="chess.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
